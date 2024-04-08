@@ -1,0 +1,14 @@
+기존연구에서 사용
+ResNet152_Weights.IMAGENET1K_V2     
+DenseNet201_Weights.IMAGENET1K_V1
+
+ImageNet 성능 좋음
+EfficientNet_V2_L_Weights.IMAGENET1K_V1     - Baseline에서 사용   85
+ViT_H_14_Weights.IMAGENET1K_SWAG_E2E_V1         - SOTA    88
+RegNet_Y_32GF_Weights.IMAGENET1K_SWAG_E2E_V1       - 86
+
+
+
+## 참고자료
+https://pytorch.org/vision/stable/models.html#table-of-all-available-classification-weights
+https://pytorch.org/vision/0.9/models.html#classification
