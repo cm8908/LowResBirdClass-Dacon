@@ -8,14 +8,14 @@ class Logger:
     def __init__(self, args, log_dir='./logs'):
         self.args = args
         
-        # Remove existing log directory
-        if os.path.exists(log_dir):
-            shutil.rmtree(log_dir)
-        
-        # Create log directory
+        # Create root log directory
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
+
+        # Create experiment directory
         self.log_path = os.path.join(log_dir, self.args.exp_name)
+        if os.path.exists(self.log_path):
+            shutil.rmtree(self.log_path)
         if not os.path.exists(self.log_path):
             os.makedirs(self.log_path)
     

@@ -35,7 +35,10 @@ def main(args):
     if not args.unfreeze:
         for param in backbone_model.parameters():
             param.requires_grad = False
-    backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
+    if args.backbone.startswith('resnet'):
+        backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
+    elif args.backbone.startswith('densenet'):
+        backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
         # Parallelize the model
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)
