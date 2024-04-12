@@ -1,1 +1,1 @@
-from .dataset import BirdDataset
+from .dataset import BirdDataset, index_to_label

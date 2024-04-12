@@ -41,3 +41,7 @@ class Logger:
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         }, os.path.join(self.save_dir, f'{save_name}.pth'))
+
+def load_checkpoint(save_path):
+    checkpoint = torch.load(save_path)
+    return checkpoint['epoch'], checkpoint['model_state_dict'], checkpoint['optimizer_state_dict']

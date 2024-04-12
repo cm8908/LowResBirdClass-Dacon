@@ -2,3 +2,5 @@ data/
 open.zip
 */__pycache__/
 logs/
+*.sh
+submissions/
