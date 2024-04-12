@@ -1,0 +1,48 @@
+# 증강이랑 csv 파일 만드는 코드
+# label 은 원본 train.csv 에서 복붙 (자동으로 하는거 아직 미구현)
+# train.csv 맨밑에 이거 붙여 넣기 하면 됨.
+
+import cv2
+import os
+import pandas as pd
+import imgaug.augmenters as iaa
+from tqdm import tqdm
+
+# Define your image directory and CSV file path
+image_dir = "./train/"
+csv_path = "data.csv"
+
+# Define augmentation pipeline
+augmentation = iaa.Sequential([
+    iaa.Fliplr(0.5),  # horizontally flip 50% of the images
+    iaa.Affine(rotate=(-10, 10))  # rotate images by -10 to 10 degrees
+])
+
+
+# Function to read images from directory and generate augmented images
+def augment_images(image_dir, csv_path):
+    data = []
+    for filename in tqdm(os.listdir(image_dir)):
+        if filename.endswith(".jpg"):
+            img_path = os.path.join(image_dir, filename)
+            label = filename.split("_", 1)[1].split(".")[0].replace("_", " ")  # Extract label from filename
+            img = cv2.imread(img_path)
+
+            # Perform data augmentation
+            augmented_img = augmentation(image=img)
+            augmented_img_path = os.path.join(image_dir, "augmented_" + filename)
+            cv2.imwrite(augmented_img_path, augmented_img)
+
+            # Append augmented image path and label to data list
+            data.append((augmented_img_path, label))
+
+    # Convert data list to pandas DataFrame
+    df = pd.DataFrame(data, columns=['img_path', 'label'])
+
+    # Save DataFrame to CSV
+    df.to_csv(csv_path, index=False)
+    print("CSV file saved successfully.")
+
+
+# Call the function to perform data augmentation and generate CSV
+augment_images(image_dir, csv_path)
