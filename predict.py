@@ -33,15 +33,11 @@ def main(args):
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)
     backbone_model = backbone_model.to(device)
-
-    # For Test: freeze all layers
-    for param in backbone_model.parameters():
-        param.requires_grad = False
-    backbone_model.eval()
     
     # Load the trained checkpoint
     _, model_state_dict, _ = load_checkpoint(args.ckpt_path)
     backbone_model.load_state_dict(model_state_dict)
+    backbone_model.eval()
     
     # Train on HR images
     with torch.no_grad():
