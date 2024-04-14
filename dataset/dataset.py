@@ -48,7 +48,7 @@ class BirdDataset(Dataset):
         img = self.transforms(img) if self.transforms else img
 
         if self.is_train:
-            upscale_img = None
+            upscale_img = 0
             if self.include_upscale:
                 upscale_img_path = os.path.join(self.data_root, self.upscale_img_paths[idx])
                 upscale_img = Image.open(upscale_img_path)
