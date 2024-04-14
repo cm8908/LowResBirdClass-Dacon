@@ -27,6 +27,11 @@ def main(args):
 
     # Load the training dataset and dataloader
     train_dataset = BirdDataset('train', include_upscale=False, transforms=transform)
+    if args.val_rate > 0:
+        val_cut = int(args.val_rate * len(train_dataset))
+        train_dataset = BirdDataset('train', include_upscale=True, transforms=transform, val_cut=val_cut)
+        val_dataset = BirdDataset('val', include_upscale=True, transforms=transforms.ToTensor(), val_cut=val_cut)
+        val_loader = DataLoader(val_dataset, batch_size=args.bsz, shuffle=False)
     dataloader = DataLoader(train_dataset, batch_size=args.bsz, shuffle=True)
 
     # Load the backbone model & classifier
@@ -54,6 +59,7 @@ def main(args):
     
     # Train on HR images
     for e in range(args.num_epochs):
+        backbone_model.train()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for i, (img, _, label) in pbar:
             # Move data to device
@@ -74,19 +80,43 @@ def main(args):
                 log_str = f'===== Epoch {e}, Iteration {i}, Loss: {loss.item():.4f}, Accuracy: {accuracy.item():.4f} ====='
                 print(log_str)
                 logger.logfile.write(log_str + '\n')
-                logger.writer.flush()
 
             logger.writer.add_scalar('Loss', loss.item(), e*len(dataloader) + i)
             logger.writer.add_scalar('Accuracy', accuracy.item(), e*len(dataloader) + i)
+            logger.writer.flush()
             pbar.set_description(f'E{e} | Loss {loss.item():.2f} ')
         
+        # End of epoch
         # Save model checkpoint
         if (e+1) % args.save_epoch_interval == 0:
             logger.save_checkpoint(backbone_model, optimizer, e, save_name=f'epoch{e}')
         logger.save_checkpoint(backbone_model, optimizer, e, save_name='latest')
         
+        # Validation
+        if args.val_rate > 0:
+            accuracy_lr_avg = 0
+            backbone_model.eval()
+            with torch.no_grad():
+                for i, (img, _, label) in enumerate(val_loader):
+                    # Move data to device
+                    img = img.to(device)
+                    label = label.to(device)
+
+                    # Forward pass
+                    output_lr = backbone_model(img)
+                    accuracy_lr = (output_lr.argmax(1) == label).float().mean()
+                    accuracy_lr_avg += accuracy_lr
+            
+            accuracy_lr_avg /= len(val_loader)
+            logger.writer.add_scalar('Val Accuracy (LR)', accuracy_lr_avg.item(), e*len(val_loader) + i)
+            logger.writer.flush()
+            log_str = f'===== Validation E{e}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
+            logger.logfile.write(log_str)
+            print(log_str)
+        
 
     # End of training
+    logger.writer.flush()
     logger.writer.close()
     logger.logfile.close()
 
