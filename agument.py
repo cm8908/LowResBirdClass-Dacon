@@ -10,12 +10,16 @@ from tqdm import tqdm
 
 # Define your image directory and CSV file path
 image_dir = "./train/"
-csv_path = "data.csv"
+csv_path = "var_aug_data.csv"
 
 # Define augmentation pipeline
 augmentation = iaa.Sequential([
     iaa.Fliplr(0.5),  # horizontally flip 50% of the images
-    iaa.Affine(rotate=(-10, 10))  # rotate images by -10 to 10 degrees
+    iaa.Affine(rotate=(-10, 10)),  # rotate images by -10 to 10 degrees
+    iaa.GaussianBlur(sigma=(0, 1.0)),  # apply gaussian blur with a sigma between 0 and 1.0
+    iaa.AdditiveGaussianNoise(scale=(0, 0.05 * 255)),  # add gaussian noise to images
+    iaa.Multiply((0.8, 1.2)),  # multiply image values by random values between 0.8 and 1.2
+    iaa.Crop(percent=(0, 0.1))  # crop images by 0-10% of their height/width
 ])
 
 
