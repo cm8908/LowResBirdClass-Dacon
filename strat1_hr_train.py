@@ -31,6 +31,9 @@ def main(args):
         A.Resize(args.img_size, args.img_size),
         A.VerticalFlip(),
         A.Rotate(10),
+        # A.GaussianBlur(),
+        # A.GaussNoise(),
+        # A.MultiplicativeNoise(),
         A.Normalize(),
         ToTensorV2()
     ])
@@ -66,7 +69,7 @@ def main(args):
     backbone_model = backbone_model.to(device)
     
     # Set up optimizer and loss function
-    optimizer = torch.optim.Adam(backbone_model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(backbone_model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss().to(device)
     
     # Train on HR images
