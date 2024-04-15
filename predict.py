@@ -1,9 +1,11 @@
 import os
 import torch
+import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
 from torch import nn
 from tqdm import tqdm
 from argparse import ArgumentParser
-from torchvision import transforms
+# from torchvision import transforms
 from dataset import BirdDataset, index_to_label
 from utils.models import load_backbone_model
 from utils.logs import load_checkpoint
@@ -19,8 +21,15 @@ def main(args):
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # Set up transformation and augmentation
+    transform = A.Compose([
+        A.Resize(args.img_size, args.img_size),
+        A.Normalize(),
+        ToTensorV2()
+    ])
+
     # Load the training dataset and dataloader
-    test_dataset = BirdDataset('test', transforms=transforms.ToTensor())
+    test_dataset = BirdDataset('test', transforms=transform)
     dataloader = DataLoader(test_dataset, batch_size=args.bsz, shuffle=False)
 
     # Load the backbone model & classifier
@@ -29,6 +38,8 @@ def main(args):
         backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
     elif args.backbone.startswith('densenet'):
         backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
+    elif args.backbone.startswith('vit'):
+        backbone_model.heads.head = nn.Linear(backbone_model.heads.head.in_features, args.num_classes)
         # Parallelize the model
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)
@@ -64,6 +75,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrained_weights', type=str, default='DEFAULT')
     parser.add_argument('--bsz', type=int, default=256)
     parser.add_argument('--num_classes', type=int, default=25)
+    parser.add_argument('--img_size', type=int, default=224)
     
     parser.add_argument('--ckpt_path', type=str, required=True)
     parser.add_argument('--submission_name', type=str, required=True)
