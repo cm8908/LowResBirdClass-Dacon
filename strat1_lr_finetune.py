@@ -132,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--backbone_ckpt_path', type=str, required=True)
     parser.add_argument('--unfreeze', action='store_true')
+    parser.add_argument('--val_rate', type=float, default=0.0)
 
     parser.add_argument('--log_interval', type=int, default=10)
     parser.add_argument('--save_epoch_interval', type=int, default=10)
