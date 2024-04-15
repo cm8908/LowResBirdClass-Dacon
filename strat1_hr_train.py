@@ -50,7 +50,7 @@ def main(args):
     dataloader = DataLoader(train_dataset, batch_size=args.bsz, shuffle=True)
 
     # Load the backbone model & classifier
-    backbone_model = load_backbone_model(args.backbone, weights=args.pretrained_weights)
+    backbone_model = load_backbone_model(args.backbone, weights=args.pretrained_weights, image_size=args.img_size)
     if not args.unfreeze:
         for param in backbone_model.parameters():
             param.requires_grad = False
@@ -58,6 +58,8 @@ def main(args):
         backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
     elif args.backbone.startswith('densenet'):
         backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
+    elif args.backbone.startswith('vit'):
+        backbone_model.heads.head = nn.Linear(backbone_model.heads.head.in_features, args.num_classes)
         # Parallelize the model
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)

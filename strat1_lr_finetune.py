@@ -58,6 +58,8 @@ def main(args):
         backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
     elif args.backbone.startswith('densenet'):
         backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
+    elif args.backbone.startswith('vit'):
+        backbone_model.heads.head = nn.Linear(backbone_model.heads.head.in_features, args.num_classes)
         # Parallelize the model
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)
