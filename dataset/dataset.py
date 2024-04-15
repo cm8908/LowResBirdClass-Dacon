@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -49,15 +50,15 @@ class BirdDataset(Dataset):
         `upscale_img` is None if `self.include_upscale` is False
         """
         img_path = os.path.join(self.data_root, self.img_paths[idx])
-        img = Image.open(img_path)
-        img = self.transforms(img) if self.transforms else img
+        img = np.array(Image.open(img_path), dtype=float)
+        img = self.transforms(image=img)['image'] if self.transforms else img
 
         if self.is_train:
             upscale_img = 0
             if self.include_upscale:
                 upscale_img_path = os.path.join(self.data_root, self.upscale_img_paths[idx])
-                upscale_img = Image.open(upscale_img_path)
-                upscale_img = self.transforms(upscale_img) if self.transforms else upscale_img
+                upscale_img = np.array(Image.open(upscale_img_path), dtype=float)
+                upscale_img = self.transforms(image=upscale_img)['image'] if self.transforms else upscale_img
         
             label = label_to_index(self.labels[idx])
             return img, upscale_img, label

@@ -1,9 +1,11 @@
 import os
 import torch
+import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
 from torch import nn
 from tqdm import tqdm
 from argparse import ArgumentParser
-from torchvision import transforms
+# from torchvision import transforms
 from dataset import BirdDataset
 from utils.models import load_backbone_model
 from utils.logs import Logger, load_checkpoint
@@ -19,18 +21,30 @@ def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Set up transformation and augmentation
-    transform = transforms.Compose([
-        transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(30),
-        transforms.ToTensor()
+    # transform = transforms.Compose([
+    #     transforms.RandomVerticalFlip(),
+    #     transforms.RandomRotation(30),
+    #     transforms.ToTensor()
+    # ])
+    train_transform = A.Compose([
+        A.Resize(args.img_size, args.img_size),
+        A.VerticalFlip(),
+        A.Rotate(10),
+        A.Normalize(),
+        ToTensorV2()
     ])
 
     # Load the training dataset and dataloader
-    train_dataset = BirdDataset('train', include_upscale=False, transforms=transform)
+    train_dataset = BirdDataset('train', include_upscale=False, transforms=train_transform)
     if args.val_rate > 0:
+        val_transform = A.Compose([
+            A.Resize(args.img_size, args.img_size),
+            A.Normalize(),
+            ToTensorV2()
+        ])
         val_cut = int(args.val_rate * len(train_dataset))
-        train_dataset = BirdDataset('train', include_upscale=True, transforms=transform, val_cut=val_cut)
-        val_dataset = BirdDataset('val', include_upscale=True, transforms=transforms.ToTensor(), val_cut=val_cut)
+        train_dataset = BirdDataset('train', include_upscale=True, transforms=train_transform, val_cut=val_cut)
+        val_dataset = BirdDataset('val', include_upscale=True, transforms=val_transform, val_cut=val_cut)
         val_loader = DataLoader(val_dataset, batch_size=args.bsz, shuffle=False)
     dataloader = DataLoader(train_dataset, batch_size=args.bsz, shuffle=True)
 
@@ -133,6 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_ckpt_path', type=str, required=True)
     parser.add_argument('--unfreeze', action='store_true')
     parser.add_argument('--val_rate', type=float, default=0.0)
+    parser.add_argument('--img_size', type=int, default=224)
 
     parser.add_argument('--log_interval', type=int, default=10)
     parser.add_argument('--save_epoch_interval', type=int, default=10)
