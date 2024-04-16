@@ -8,6 +8,12 @@ class Logger:
     def __init__(self, args):
         log_dir = args.log_dir
         self.args = args
+
+        if args.early_stop:
+            self.stop = False
+            self.best_val_loss = float('inf')
+            self.stop_counter = 0
+            self.patience = args.early_stop_patience
         
         # Create root log directory
         if not os.path.exists(log_dir):
@@ -38,6 +44,16 @@ class Logger:
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
     
+    def check_early_stop(self, val_loss):
+        if val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+            self.stop_counter = 0
+        else:
+            self.stop_counter += 1
+            if self.stop_counter >= self.patience:
+                self.stop = True
+                print('Early stopping triggered.')
+                
     def save_checkpoint(self, model, optimizer, epoch, save_name='latest'):
         torch.save({
             'epoch': epoch,

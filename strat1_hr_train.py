@@ -109,6 +109,7 @@ def main(args):
         
         # Validation
         if args.val_rate > 0:
+            val_loss_avg = 0
             accuracy_hr_avg = 0
             accuracy_lr_avg = 0
             backbone_model.eval()
@@ -122,11 +123,15 @@ def main(args):
                     # Forward pass
                     output_hr = backbone_model(upscale_img)
                     output_lr = backbone_model(img)
+                    val_loss = criterion(output_hr, label)
                     accuracy_hr = (output_hr.argmax(1) == label).float().mean()
                     accuracy_lr = (output_lr.argmax(1) == label).float().mean()
+                    val_loss_avg += val_loss
                     accuracy_hr_avg += accuracy_hr
                     accuracy_lr_avg += accuracy_lr
             
+            # Record validation metrics
+            val_loss_avg /= len(val_loader)
             accuracy_hr_avg /= len(val_loader)
             accuracy_lr_avg /= len(val_loader)
             logger.writer.add_scalar('Val Accuracy (HR)', accuracy_hr_avg.item(), e*len(val_loader) + i)
@@ -135,6 +140,11 @@ def main(args):
             log_str = f'===== Validation E{e},  Accuracy (HR): {accuracy_hr_avg.item():.4f}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
             logger.logfile.write(log_str + '\n')
             print(log_str)
+
+            if args.early_stop:
+                logger.check_early_stop(val_loss_avg.item())
+                if logger.stop:
+                    break
         
 
     # End of training

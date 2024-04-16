@@ -113,6 +113,7 @@ def main(args):
         
         # Validation
         if args.val_rate > 0:
+            val_loss_avg = 0
             accuracy_lr_avg = 0
             backbone_model.eval()
             with torch.no_grad():
@@ -123,15 +124,23 @@ def main(args):
 
                     # Forward pass
                     output_lr = backbone_model(img)
+                    val_loss = criterion(output_lr, label)
                     accuracy_lr = (output_lr.argmax(1) == label).float().mean()
+                    val_loss_avg += val_loss
                     accuracy_lr_avg += accuracy_lr
             
+            val_loss_avg /= len(val_loader)
             accuracy_lr_avg /= len(val_loader)
             logger.writer.add_scalar('Val Accuracy (LR)', accuracy_lr_avg.item(), e*len(val_loader) + i)
             logger.writer.flush()
             log_str = f'===== Validation E{e}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
             logger.logfile.write(log_str + '\n')
             print(log_str)
+
+            if args.early_stop:
+                logger.check_early_stop(val_loss_avg.item())
+                if logger.stop:
+                    break
         
 
     # End of training
