@@ -7,5 +7,6 @@ lr-test에 대해 분류.
 2. Upscale & Predict
 hr-train으로 분류모델 학습시킴.
 lr-train -> hr-train으로 upscaling Upscale모델 학습시킴
+    => Upscaling 모델은 pre-trained? 아니면 from scratch?
 lr-test -> hr-test으로 upscaling함
 hr-test를 분류 모델에 넘겨줌.
