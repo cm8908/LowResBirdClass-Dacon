@@ -15,6 +15,8 @@ class Logger:
         # Create experiment directory
         self.log_path = os.path.join(log_dir, self.args.exp_name)
         if os.path.exists(self.log_path):
+            if input('Log directory already exists. Overwrite? (y/n)') != 'y':
+                exit()
             shutil.rmtree(self.log_path)
         if not os.path.exists(self.log_path):
             os.makedirs(self.log_path)

@@ -130,7 +130,7 @@ def main(args):
             logger.writer.add_scalar('Val Accuracy (LR)', accuracy_lr_avg.item(), e*len(val_loader) + i)
             logger.writer.flush()
             log_str = f'===== Validation E{e}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
-            logger.logfile.write(log_str)
+            logger.logfile.write(log_str + '\n')
             print(log_str)
         
 
