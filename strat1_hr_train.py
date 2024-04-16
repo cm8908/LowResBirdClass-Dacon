@@ -31,9 +31,9 @@ def main(args):
         A.Resize(args.img_size, args.img_size),
         A.VerticalFlip(),
         A.Rotate(10),
-        # A.GaussianBlur(),
-        # A.GaussNoise(),
-        # A.MultiplicativeNoise(),
+        A.GaussianBlur(),
+        A.GaussNoise(),
+        A.MultiplicativeNoise(),
         A.Normalize(),
         ToTensorV2()
     ])
@@ -133,7 +133,7 @@ def main(args):
             logger.writer.add_scalar('Val Accuracy (LR)', accuracy_lr_avg.item(), e*len(val_loader) + i)
             logger.writer.flush()
             log_str = f'===== Validation E{e},  Accuracy (HR): {accuracy_hr_avg.item():.4f}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
-            logger.logfile.write(log_str)
+            logger.logfile.write(log_str + '\n')
             print(log_str)
         
 
