@@ -156,6 +156,7 @@ if __name__ == '__main__':
     parser.add_argument('--val_rate', type=float, default=0.0)
     parser.add_argument('--img_size', type=int, default=224)
 
+    parser.add_argument('--log_dir', type=str, default='logs')
     parser.add_argument('--log_interval', type=int, default=10)
     parser.add_argument('--save_epoch_interval', type=int, default=10)
     args = parser.parse_args()

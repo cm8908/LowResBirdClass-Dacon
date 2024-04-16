@@ -5,7 +5,8 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 class Logger:
-    def __init__(self, args, log_dir='./logs'):
+    def __init__(self, args):
+        log_dir = args.log_dir
         self.args = args
         
         # Create root log directory
