@@ -8,7 +8,7 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 # from torchvision import transforms
 from dataset import BirdDataset
-from utils.models import load_backbone_model
+from utils.models import load_backbone_model, load_classifier
 from utils.logs import Logger, load_checkpoint
 from torch.utils.data import DataLoader
 from torch.nn import DataParallel
@@ -59,11 +59,11 @@ def main(args):
         for param in backbone_model.parameters():
             param.requires_grad = False
     if args.backbone.startswith('resnet'):
-        backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
-    elif args.backbone.startswith('densenet'):
-        backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
+        backbone_model.fc = load_classifier(backbone_model.fc.in_features, args.num_classes, args.cls_type)
+    elif any(model_name in args.backbone for model_name in ['densenet', 'swinv2']):
+        backbone_model.classifier = load_classifier(backbone_model.classifier.in_features, args.num_classes, args.cls_type)
     elif args.backbone.startswith('vit'):
-        backbone_model.heads.head = nn.Linear(backbone_model.heads.head.in_features, args.num_classes)
+        backbone_model.heads.head = load_classifier(backbone_model.heads.head.in_features, args.num_classes, args.cls_type)
         # Parallelize the model
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)
@@ -170,5 +170,6 @@ if __name__ == '__main__':
     parser.add_argument('--save_epoch_interval', type=int, default=10)
     parser.add_argument('--early_stop', action='store_true')
     parser.add_argument('--offline_lr_augmentation', action='store_true')
+    parser.add_argument('--early_stop_patience', type=int, default=3)
     args = parser.parse_args()
     main(args)
