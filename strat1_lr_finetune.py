@@ -1,4 +1,5 @@
 import os
+from sklearn.metrics import f1_score
 import torch
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
@@ -88,7 +89,7 @@ def main(args):
             # Forward pass
             output = backbone_model(img)
             loss = criterion(output, label)
-            accuracy = (output.argmax(1) == label).float().mean()
+            f1score = f1_score(label.cpu().numpy(), output.argmax(1).cpu().numpy(), average='macro')
             
             # Backward pass
             optimizer.zero_grad()
@@ -96,12 +97,12 @@ def main(args):
             optimizer.step()
             
             if (i+1) % args.log_interval == 0:
-                log_str = f'===== Epoch {e}, Iteration {i}, Loss: {loss.item():.4f}, Accuracy: {accuracy.item():.4f} ====='
+                log_str = f'===== Epoch {e}, Iteration {i}, Loss: {loss.item():.4f}, F1 score: {f1score.item():.4f} ====='
                 print(log_str)
                 logger.logfile.write(log_str + '\n')
 
             logger.writer.add_scalar('Loss', loss.item(), e*len(dataloader) + i)
-            logger.writer.add_scalar('Accuracy', accuracy.item(), e*len(dataloader) + i)
+            logger.writer.add_scalar('F1 score', f1score.item(), e*len(dataloader) + i)
             logger.writer.flush()
             pbar.set_description(f'E{e} | Loss {loss.item():.2f} ')
         
@@ -113,8 +114,8 @@ def main(args):
         
         # Validation
         if args.val_rate > 0:
-            val_loss_avg = 0
-            accuracy_lr_avg = 0
+            outputs_lr = []
+            labels = []
             backbone_model.eval()
             with torch.no_grad():
                 for i, (img, _, label) in enumerate(val_loader):
@@ -124,21 +125,22 @@ def main(args):
 
                     # Forward pass
                     output_lr = backbone_model(img)
-                    val_loss = criterion(output_lr, label)
-                    accuracy_lr = (output_lr.argmax(1) == label).float().mean()
-                    val_loss_avg += val_loss
-                    accuracy_lr_avg += accuracy_lr
+                    
+                    outputs_lr.append(output_lr)
+                    labels.append(label)
             
-            val_loss_avg /= len(val_loader)
-            accuracy_lr_avg /= len(val_loader)
-            logger.writer.add_scalar('Val Accuracy (LR)', accuracy_lr_avg.item(), e*len(val_loader) + i)
+            outputs_lr = torch.cat(outputs_lr, dim=0)
+            labels = torch.cat(labels, dim=0)
+            val_f1score_lr = f1_score(labels.cpu().numpy(), outputs_lr.argmax(1).cpu().numpy(), average='macro')
+            # Record validation metrics
+            logger.writer.add_scalar('Val F1-score (LR)', val_f1score_lr.item(), e*len(val_loader) + i)
             logger.writer.flush()
-            log_str = f'===== Validation E{e}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
+            log_str = f'===== Validation E{e}, F1 score: {val_f1score_lr.item():.4f} ====='
             logger.logfile.write(log_str + '\n')
             print(log_str)
 
             if args.early_stop:
-                logger.check_early_stop(val_loss_avg.item())
+                logger.check_early_stop(val_f1score_lr.item())
                 if logger.stop:
                     break
         
