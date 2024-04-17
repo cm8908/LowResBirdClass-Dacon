@@ -11,6 +11,7 @@ from utils.models import load_backbone_model
 from utils.logs import Logger
 from torch.utils.data import DataLoader
 from torch.nn import DataParallel
+from sklearn.metrics import f1_score
 
 def main(args):
     # Set up experiment log
@@ -84,7 +85,7 @@ def main(args):
             # Forward pass
             output = backbone_model(upscale_img)
             loss = criterion(output, label)
-            accuracy = (output.argmax(1) == label).float().mean()
+            f1score = f1_score(label.cpu().numpy(), output.argmax(1).cpu().numpy(), average='macro')
             
             # Backward pass
             optimizer.zero_grad()
@@ -92,12 +93,12 @@ def main(args):
             optimizer.step()
             
             if (i+1) % args.log_interval == 0:
-                log_str = f'===== Epoch {e}, Iteration {i}, Loss: {loss.item():.4f}, Accuracy: {accuracy.item():.4f} ====='
+                log_str = f'===== Epoch {e}, Iteration {i}, Loss: {loss.item():.4f}, F1 score: {f1score.item():.4f} ====='
                 print(log_str)
                 logger.logfile.write(log_str + '\n')
 
             logger.writer.add_scalar('Loss', loss.item(), e*len(dataloader) + i)
-            logger.writer.add_scalar('Accuracy', accuracy.item(), e*len(dataloader) + i)
+            logger.writer.add_scalar('F1 score', f1score.item(), e*len(dataloader) + i)
             logger.writer.flush()
             pbar.set_description(f'E{e} | Loss {loss.item():.2f} ')
         
@@ -109,9 +110,9 @@ def main(args):
         
         # Validation
         if args.val_rate > 0:
-            val_loss_avg = 0
-            accuracy_hr_avg = 0
-            accuracy_lr_avg = 0
+            outputs_hr = []
+            outputs_lr = []
+            labels = []
             backbone_model.eval()
             with torch.no_grad():
                 for i, (img, upscale_img, label) in enumerate(val_loader):
@@ -123,26 +124,27 @@ def main(args):
                     # Forward pass
                     output_hr = backbone_model(upscale_img)
                     output_lr = backbone_model(img)
-                    val_loss = criterion(output_hr, label)
-                    accuracy_hr = (output_hr.argmax(1) == label).float().mean()
-                    accuracy_lr = (output_lr.argmax(1) == label).float().mean()
-                    val_loss_avg += val_loss
-                    accuracy_hr_avg += accuracy_hr
-                    accuracy_lr_avg += accuracy_lr
+                    
+                    outputs_hr.append(output_hr)
+                    outputs_lr.append(output_lr)
+                    labels.append(label)
             
+            outputs_hr = torch.cat(outputs_hr, dim=0)
+            outputs_lr = torch.cat(outputs_lr, dim=0)
+            labels = torch.cat(labels, dim=0)
+            val_f1score_hr = f1_score(labels.cpu().numpy(), outputs_hr.argmax(1).cpu().numpy(), average='macro')
+            val_f1score_lr = f1_score(labels.cpu().numpy(), outputs_lr.argmax(1).cpu().numpy(), average='macro')
             # Record validation metrics
-            val_loss_avg /= len(val_loader)
-            accuracy_hr_avg /= len(val_loader)
-            accuracy_lr_avg /= len(val_loader)
-            logger.writer.add_scalar('Val Accuracy (HR)', accuracy_hr_avg.item(), e*len(val_loader) + i)
-            logger.writer.add_scalar('Val Accuracy (LR)', accuracy_lr_avg.item(), e*len(val_loader) + i)
+
+            logger.writer.add_scalar('Val F1-score (HR)', val_f1score_hr.item(), e*len(val_loader) + i)
+            logger.writer.add_scalar('Val F1-score (LR)', val_f1score_lr.item(), e*len(val_loader) + i)
             logger.writer.flush()
-            log_str = f'===== Validation E{e},  Accuracy (HR): {accuracy_hr_avg.item():.4f}, Accuracy (LR): {accuracy_lr_avg.item():.4f} ====='
+            log_str = f'===== Validation E{e},  F1 score (HR): {val_f1score_hr.item():.4f}, F1 score (LR): {val_f1score_lr.item():.4f} ====='
             logger.logfile.write(log_str + '\n')
             print(log_str)
 
             if args.early_stop:
-                logger.check_early_stop(val_loss_avg.item())
+                logger.check_early_stop(val_f1score_lr.item())
                 if logger.stop:
                     break
         

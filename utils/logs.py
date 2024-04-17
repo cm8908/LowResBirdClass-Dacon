@@ -11,7 +11,7 @@ class Logger:
 
         if args.early_stop:
             self.stop = False
-            self.best_val_loss = float('inf')
+            self.best_f1 = float('inf')
             self.stop_counter = 0
             self.patience = args.early_stop_patience
         
@@ -44,9 +44,9 @@ class Logger:
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
     
-    def check_early_stop(self, val_loss):
-        if val_loss < self.best_val_loss:
-            self.best_val_loss = val_loss
+    def check_early_stop(self, f1):
+        if f1 > self.best_f1:
+            self.best_f1 = f1
             self.stop_counter = 0
         else:
             self.stop_counter += 1
