@@ -20,13 +20,17 @@ def index_to_label(index):
 
 
 class BirdDataset(Dataset):
-    def __init__(self, phase, data_root='./data', include_upscale=False, transforms=None, val_cut=0):
+    def __init__(self, phase, data_root='./data', include_upscale=False, transforms=None, val_cut=0, offline_lr_augmentation=False):
         assert phase in ['train', 'test', 'val']
         self.is_train = phase in ['train', 'val']
 
         self.data_root = data_root
         self.transforms = transforms
         df = pd.read_csv(os.path.join(self.data_root, f'{"train" if self.is_train else "test"}.csv'))
+        if offline_lr_augmentation:
+            assert self.is_train
+            assert not include_upscale
+            df = pd.read_csv(os.path.join(self.data_root, 'train_lr-augmented.csv'))
         if phase == 'train':
             df = df.iloc[val_cut:]
         elif phase == 'val':

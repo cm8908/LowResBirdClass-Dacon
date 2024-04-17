@@ -38,7 +38,7 @@ def main(args):
     ])
 
     # Load the training dataset and dataloader
-    train_dataset = BirdDataset('train', include_upscale=False, transforms=train_transform)
+    train_dataset = BirdDataset('train', include_upscale=False, transforms=train_transform, offline_lr_augmentation=args.offline_lr_augmentation)
     if args.val_rate > 0:
         val_transform = A.Compose([
             A.Resize(args.img_size, args.img_size),
@@ -46,8 +46,8 @@ def main(args):
             ToTensorV2()
         ])
         val_cut = int(args.val_rate * len(train_dataset))
-        train_dataset = BirdDataset('train', include_upscale=True, transforms=train_transform, val_cut=val_cut)
-        val_dataset = BirdDataset('val', include_upscale=True, transforms=val_transform, val_cut=val_cut)
+        train_dataset = BirdDataset('train', include_upscale=False, transforms=train_transform, val_cut=val_cut, offline_lr_augmentation=args.offline_lr_augmentation)
+        val_dataset = BirdDataset('val', include_upscale=False, transforms=val_transform, val_cut=val_cut, offline_lr_augmentation=args.offline_lr_augmentation)
         val_loader = DataLoader(val_dataset, batch_size=args.bsz, shuffle=False)
     dataloader = DataLoader(train_dataset, batch_size=args.bsz, shuffle=True)
 
@@ -166,5 +166,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir', type=str, default='logs')
     parser.add_argument('--log_interval', type=int, default=10)
     parser.add_argument('--save_epoch_interval', type=int, default=10)
+    parser.add_argument('--early_stop', action='store_true')
+    parser.add_argument('--offline_lr_augmentation', action='store_true')
     args = parser.parse_args()
     main(args)
