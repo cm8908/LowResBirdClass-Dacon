@@ -11,7 +11,7 @@ class Logger:
 
         if args.early_stop:
             self.stop = False
-            self.best_f1 = float('inf')
+            self.best_f1 = 0.0
             self.stop_counter = 0
             self.patience = args.early_stop_patience
         

@@ -60,7 +60,7 @@ def main(args):
             param.requires_grad = False
     if args.backbone.startswith('resnet'):
         backbone_model.fc = load_classifier(backbone_model.fc.in_features, args.num_classes, args.cls_type)
-    elif any(model_name in args.backbone for model_name in ['densenet', 'swinv2']):
+    elif any(model_name in args.backbone for model_name in ['densenet', 'swinv2', 'vitl']):
         backbone_model.classifier = load_classifier(backbone_model.classifier.in_features, args.num_classes, args.cls_type)
     elif args.backbone.startswith('vit'):
         backbone_model.heads.head = load_classifier(backbone_model.heads.head.in_features, args.num_classes, args.cls_type)
@@ -126,6 +126,11 @@ def main(args):
                     # Forward pass
                     output_hr = backbone_model(upscale_img)
                     output_lr = backbone_model(img)
+
+                    if not isinstance(output_hr, torch.Tensor):
+                        output_hr = output_hr.logits
+                    if not isinstance(output_lr, torch.Tensor):
+                        output_lr = output_lr.logits
                     
                     outputs_hr.append(output_hr)
                     outputs_lr.append(output_lr)
@@ -175,5 +180,6 @@ if __name__ == '__main__':
     parser.add_argument('--save_epoch_interval', type=int, default=10)
     parser.add_argument('--early_stop', action='store_true')
     parser.add_argument('--early_stop_patience', type=int, default=3)
+    parser.add_argument('--cls_type', type=str, default='linear')
     args = parser.parse_args()
     main(args)
