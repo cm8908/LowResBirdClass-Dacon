@@ -69,7 +69,23 @@ class BirdDataset(Dataset):
         else:
             return img, self.ids[idx]
 
+class BirdDatasetFromDF(BirdDataset):
+    def __init__(self, df, phase, data_root='./data', include_upscale=False, transforms=None):
+        assert phase in ['train', 'test', 'val']
+        self.is_train = phase in ['train', 'val']
 
+        self.data_root = data_root
+        self.transforms = transforms
+
+        self.img_paths = df['img_path'].values
+        if self.is_train:
+            self.labels = df['label'].values
+            self.include_upscale = include_upscale
+            if self.include_upscale:
+                self.upscale_img_paths = df['upscale_img_path'].values
+        else:
+            self.ids = df['id'].values
+        
 if __name__ == '__main__':
     train_dataset = BirdDataset('train')
     print(len(train_dataset))
