@@ -29,14 +29,14 @@ def main(args):
     ])
 
     # Load the training dataset and dataloader
-    test_dataset = BirdDataset('test', transforms=transform)
+    test_dataset = BirdDataset('test', transforms=transform, test_upscaled=True)
     dataloader = DataLoader(test_dataset, batch_size=args.bsz, shuffle=False)
 
     # Load the backbone model & classifier
     backbone_model = load_backbone_model(args.backbone, weights=args.pretrained_weights)
     if args.backbone.startswith('resnet'):
         backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
-    elif args.backbone.startswith('densenet'):
+    elif any(model_name in args.backbone for model_name in ['densenet', 'swinv2', 'vitl']):
         backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
     elif args.backbone.startswith('vit'):
         backbone_model.heads.head = nn.Linear(backbone_model.heads.head.in_features, args.num_classes)
@@ -59,6 +59,8 @@ def main(args):
 
             # Forward pass
             output = backbone_model(img)
+            if not isinstance(output, torch.Tensor):
+                output = output.logits
             for b in range(len(output)):
                 prediction = index_to_label(output[b].argmax(dim=0))
             
