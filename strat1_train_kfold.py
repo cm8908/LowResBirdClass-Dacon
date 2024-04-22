@@ -43,7 +43,6 @@ def train_hr(args, logger, backbone_model, optimizer, criterion, device, train_f
         backbone_model.train()
         pbar = tqdm(enumerate(dataloader), total=len(dataloader))
         for i, (_, upscale_img, label) in pbar:
-            continue
             # Move data to device
             upscale_img = upscale_img.to(device)
             label = label.to(device)

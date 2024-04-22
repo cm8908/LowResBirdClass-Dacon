@@ -31,7 +31,7 @@ def main(args):
     ])
 
     # Load the training dataset and dataloader
-    test_dataset = BirdDataset('test', transforms=transform, test_upscaled=True)
+    test_dataset = BirdDataset('test', transforms=transform, test_upscaled=False)
     dataloader = DataLoader(test_dataset, batch_size=args.bsz, shuffle=False)
 
     # Load the backbone model & classifier
@@ -50,13 +50,16 @@ def main(args):
     fold_ckpt_paths = glob(os.path.join(args.ckpt_dir, 'latest_fold*.pth'))
     fold_preds = []
     for fold_ckpt_path in fold_ckpt_paths:
+        print(f'Prediction using {fold_ckpt_path}')
         # Load the trained checkpoint
-        _, model_state_dict, _ = load_checkpoint(args.ckpt_path)
+        _, model_state_dict, _ = load_checkpoint(fold_ckpt_path)
         backbone_model.load_state_dict(model_state_dict)
         backbone_model.eval()
         
         with torch.no_grad():
             pbar = tqdm(enumerate(dataloader), total=len(dataloader))
+            batch_preds = []
+            batch_img_ids = []
             for i, (img, img_id) in pbar:
                 # Move data to device
                 img = img.to(device)
@@ -65,14 +68,18 @@ def main(args):
                 output = backbone_model(img)
                 if not isinstance(output, torch.Tensor):
                     output = output.logits
-                fold_preds.append(output.argmax(dim=1).cpu().numpy())
-        preds_ensemble = list(map(lambda x: np.bincount(x).argmax(), np.stack(fold_preds, axis=1)))
+                batch_preds.append(output.argmax(dim=1).cpu().numpy())
+                batch_img_ids.extend(img_id)
+            batch_preds = np.concatenate(batch_preds)
+        fold_preds.append(batch_preds)
+    preds_ensemble = list(map(lambda x: np.bincount(x).argmax(), np.stack(fold_preds, axis=1)))
 
-        for i in range(len(preds_ensemble)):
-            prediction = index_to_label(preds_ensemble[i].argmax(dim=0))
-                
-            print(img_id[i], prediction)
-            submission.write(f'{img_id[i]},{prediction}\n')
+    print('Writing submission file...')
+    for i in tqdm(range(len(preds_ensemble))):
+        prediction = index_to_label(preds_ensemble[i])
+            
+        # print(img_id[i], prediction)
+        submission.write(f'{batch_img_ids[i]},{prediction}\n')
     submission.close()
     
 
@@ -85,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes', type=int, default=25)
     parser.add_argument('--img_size', type=int, default=224)
     
-    parser.add_argument('--ckpt_path', type=str, required=True)
+    parser.add_argument('--ckpt_dir', type=str, required=True)
     parser.add_argument('--submission_name', type=str, required=True)
 
     args = parser.parse_args()
