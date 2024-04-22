@@ -22,7 +22,7 @@ class Logger:
         # Create experiment directory
         self.log_path = os.path.join(log_dir, self.args.exp_name)
         if os.path.exists(self.log_path):
-            if input('Log directory already exists. Overwrite? (y/n)') != 'y':
+            if input(f'Log directory {self.log_path} already exists. Overwrite? (y/n)') != 'y':
                 exit()
             shutil.rmtree(self.log_path)
         if not os.path.exists(self.log_path):
@@ -53,6 +53,11 @@ class Logger:
             if self.stop_counter >= self.patience:
                 self.stop = True
                 print('Early stopping triggered.')
+
+    def reset_early_stop(self):
+        self.stop = False
+        self.best_f1 = 0.0
+        self.stop_counter = 0
                 
     def save_checkpoint(self, model, optimizer, epoch, save_name='latest'):
         torch.save({

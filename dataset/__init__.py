@@ -1,1 +1,1 @@
-from .dataset import BirdDataset, index_to_label
+from .dataset import BirdDataset, index_to_label, BirdDatasetFromDF
