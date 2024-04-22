@@ -29,14 +29,14 @@ def load_backbone_model(model_name, **kwargs):
 def load_classifier(in_features, num_classes, cls_type='linear'):
     classifiers = {
         'linear': nn.Linear(in_features, num_classes),
-        'mlp': torch.nn.Sequential(
-            torch.nn.Linear(in_features, 512),
-            torch.nn.ReLU(),
-            torch.nn.Linear(512, num_classes)
+        'mlp': nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.ReLU(),
+            nn.Linear(512, num_classes)
         ),
-        'tanh-linear': torch.nn.Sequential(
-            torch.nn.Tanh(),
-            torch.nn.Linear(in_features, num_classes)
+        'tanh-linear': nn.Sequential(
+            nn.Tanh(),
+            nn.Linear(in_features, num_classes)
         ),
     }
     return classifiers[cls_type]
