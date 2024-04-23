@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 import torch
 import albumentations as A
@@ -96,26 +97,26 @@ def train_hr(args, logger, backbone_model, optimizer, criterion, device, train_f
                 if not isinstance(output_lr, torch.Tensor):
                     output_lr = output_lr.logits
                     
-                outputs_hr.append(output_hr)
-                outputs_lr.append(output_lr)
-                labels.append(label)
+                outputs_hr.append(output_hr.cpu().numpy())
+                outputs_lr.append(output_lr.cpu().numpy())
+                labels.append(label.cpu().numpy())
             
-        outputs_hr = torch.cat(outputs_hr, dim=0)
-        outputs_lr = torch.cat(outputs_lr, dim=0)
-        labels = torch.cat(labels, dim=0)
-        val_f1score_hr = f1_score(labels.cpu().numpy(), outputs_hr.argmax(1).cpu().numpy(), average='macro')
-        val_f1score_lr = f1_score(labels.cpu().numpy(), outputs_lr.argmax(1).cpu().numpy(), average='macro')
+        outputs_hr = np.concatenate(outputs_hr, axis=0)
+        outputs_lr = np.concatenate(outputs_lr, axis=0)
+        labels = np.concatenate(labels, axis=0)
+        val_f1score_hr = f1_score(labels, outputs_hr.argmax(1), average='macro')
+        val_f1score_lr = f1_score(labels, outputs_lr.argmax(1), average='macro')
         # Record validation metrics
 
-        logger.writer.add_scalar('Val F1-score (HR)', val_f1score_hr.item(), e*len(val_loader) + i)
-        logger.writer.add_scalar('Val F1-score (LR)', val_f1score_lr.item(), e*len(val_loader) + i)
+        logger.writer.add_scalar('Val F1-score (HR)', val_f1score_hr, e*len(val_loader) + i)
+        logger.writer.add_scalar('Val F1-score (LR)', val_f1score_lr, e*len(val_loader) + i)
         logger.writer.flush()
-        log_str = f'===== Validation E{e},  F1 score (HR): {val_f1score_hr.item():.4f}, F1 score (LR): {val_f1score_lr.item():.4f} ====='
+        log_str = f'===== Validation E{e},  F1 score (HR): {val_f1score_hr:.4f}, F1 score (LR): {val_f1score_lr:.4f} ====='
         logger.logfile.write(log_str + '\n')
         print(log_str)
 
         if args.early_stop:
-            logger.check_early_stop(val_f1score_lr.item())
+            logger.check_early_stop(val_f1score_lr)
             if logger.stop:
                 break
 
@@ -174,8 +175,8 @@ def train_lr(args, logger, backbone_model, optimizer, criterion, device, train_f
         # End of epoch
         # Save model checkpoint
         if (e+1) % args.save_epoch_interval == 0:
-            logger.save_checkpoint(backbone_model, optimizer, e, save_name=f'epoch{e}')
-        logger.save_checkpoint(backbone_model, optimizer, e, save_name='latest')
+            logger.save_checkpoint(backbone_model, optimizer, e, save_name=f'epoch{e}_ft_fold{fold_idx}')
+        logger.save_checkpoint(backbone_model, optimizer, e, save_name=f'latest_ft_fold{fold_idx}')
         
         # Validation
         outputs_lr = []
@@ -193,21 +194,21 @@ def train_lr(args, logger, backbone_model, optimizer, criterion, device, train_f
                 if not isinstance(output_lr, torch.Tensor):
                     output_lr = output_lr.logits
                 
-                outputs_lr.append(output_lr)
-                labels.append(label)
+                outputs_lr.append(output_lr.cpu().numpy())
+                labels.append(label.cpu().numpy())
             
-        outputs_lr = torch.cat(outputs_lr, dim=0)
-        labels = torch.cat(labels, dim=0)
-        val_f1score_lr = f1_score(labels.cpu().numpy(), outputs_lr.argmax(1).cpu().numpy(), average='macro')
+        outputs_lr = np.concatenate(outputs_lr, axis=0)
+        labels = np.concatenate(labels, axis=0)
+        val_f1score_lr = f1_score(labels, outputs_lr.argmax(1), average='macro')
         # Record validation metrics
-        logger.writer.add_scalar('Val F1-score (LR)', val_f1score_lr.item(), e*len(val_loader) + i)
+        logger.writer.add_scalar('Val F1-score (LR)', val_f1score_lr, e*len(val_loader) + i)
         logger.writer.flush()
-        log_str = f'===== Validation E{e}, F1 score: {val_f1score_lr.item():.4f} ====='
+        log_str = f'===== Validation E{e}, F1 score: {val_f1score_lr:.4f} ====='
         logger.logfile.write(log_str + '\n')
         print(log_str)
 
         if args.early_stop:
-            logger.check_early_stop(val_f1score_lr.item())
+            logger.check_early_stop(val_f1score_lr)
             if logger.stop:
                 break
 
