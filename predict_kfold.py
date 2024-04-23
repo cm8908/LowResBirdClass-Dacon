@@ -9,7 +9,7 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 # from torchvision import transforms
 from dataset import BirdDataset, index_to_label
-from utils.models import load_backbone_model
+from utils.models import load_backbone_model, load_classifier
 from utils.logs import load_checkpoint
 from torch.utils.data import DataLoader
 from torch.nn import DataParallel
@@ -37,11 +37,11 @@ def main(args):
     # Load the backbone model & classifier
     backbone_model = load_backbone_model(args.backbone, weights=args.pretrained_weights)
     if args.backbone.startswith('resnet'):
-        backbone_model.fc = nn.Linear(backbone_model.fc.in_features, args.num_classes)
+        backbone_model.fc = load_classifier(backbone_model.fc.in_features, args.num_classes, args.cls_type)
     elif any(model_name in args.backbone for model_name in ['densenet', 'swinv2', 'vitl']):
-        backbone_model.classifier = nn.Linear(backbone_model.classifier.in_features, args.num_classes)
+        backbone_model.classifier = load_classifier(backbone_model.classifier.in_features, args.num_classes, args.cls_type)
     elif args.backbone.startswith('vit'):
-        backbone_model.heads.head = nn.Linear(backbone_model.heads.head.in_features, args.num_classes)
+        backbone_model.heads.head = load_classifier(backbone_model.heads.head.in_features, args.num_classes, args.cls_type)
         # Parallelize the model
     if torch.cuda.device_count() > 1:
         backbone_model = DataParallel(backbone_model)
@@ -94,6 +94,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--ckpt_dir', type=str, required=True)
     parser.add_argument('--submission_name', type=str, required=True)
+    parser.add_argument('--cls_type', type=str, default='linear')
 
     args = parser.parse_args()
     main(args)
