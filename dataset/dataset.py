@@ -33,7 +33,7 @@ class BirdDataset(Dataset):
             df = pd.read_csv(os.path.join(self.data_root, 'train_lr-augmented.csv'))
         if test_upscaled:
             assert not self.is_train
-            df = pd.read_csv(os.path.join(self.data_root, 'test_upscaled_vanilla.csv'))
+            df = pd.read_csv(os.path.join(self.data_root, 'test_upscaled.csv'))
         if phase == 'train':
             df = df.iloc[val_cut:]
         elif phase == 'val':
