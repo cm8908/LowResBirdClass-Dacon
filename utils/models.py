@@ -7,6 +7,9 @@ from torch import nn
 def load_backbone_model(model_name, **kwargs):
     def huggingface_wrapper(model):
         return lambda **kw: model.from_pretrained(kw['weights'])
+    # models.로 시작하는 것들은 torchvision.models에 있는 모델들
+    # huggingface_wrapper로 감싼 것들은 huggingface transformers에 있는 모델들
+    # huggingface 모델들은 --pretrained_weights를 반드시 설정해줘야 합니다. (DEFAULT 설정 불가)
     model_instances = {
         'resnet18': models.resnet18,
         'resnet50': models.resnet50,

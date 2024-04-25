@@ -323,25 +323,42 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--exp_name', type=str, default='strat1_hr')
+    parser.add_argument('--exp_name', type=str, default='strat1_hr', 
+                        help='원하는 실험 이름을 입력하세요.')
     parser.add_argument('--gpu_id', type=str, default='0')
-    parser.add_argument('--backbone', type=str, default='resnet50')
-    parser.add_argument('--pretrained_weights', type=str, default='DEFAULT')
-    parser.add_argument('--bsz', type=int, default=512)
-    parser.add_argument('--num_classes', type=int, default=25)
-    parser.add_argument('--num_epochs', type=int, default=100)
-    parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--unfreeze_hr', action='store_true')
-    parser.add_argument('--unfreeze_lr', action='store_true')
-    parser.add_argument('--val_rate', type=float, default=0.0)
-    parser.add_argument('--img_size', type=int, default=224)
+    parser.add_argument('--backbone', type=str, default='resnet50', 
+                        help='Backbone architecture. utils/models.py의 load_model 함수 참조.')
+    parser.add_argument('--pretrained_weights', type=str, default='DEFAULT', 
+                        help='Pretrained weights to load. utils/models.py의 load_model 함수에 주석을 참고하세요.')
+    parser.add_argument('--bsz', type=int, default=512, 
+                        help='Batch size.')
+    parser.add_argument('--num_classes', type=int, default=25, 
+                        help='Number of classes. (=25)')
+    parser.add_argument('--num_epochs', type=int, default=100, 
+                        help='Number of epochs to train.')
+    parser.add_argument('--lr', type=float, default=1e-4, 
+                        help='Learning rate.')
+    parser.add_argument('--unfreeze_hr', action='store_true', 
+                        help='HR training 시에 backbone weights를 freeze하지 않습니다.')
+    parser.add_argument('--unfreeze_lr', action='store_true', 
+                        help='LR training 시에 backbone weights를 freeze하지 않습니다.')
+    parser.add_argument('--val_rate', type=float, default=0.0, 
+                        help='Validation set 비율.')
+    parser.add_argument('--img_size', type=int, default=224, 
+                        help='Image size to be resized. Backbone 모델에 따라 다른 크기를 사용하는 것을 추천합니다. (e.g. SwinV2의 경우 256)')
 
     parser.add_argument('--log_dir', type=str, default='logs')
-    parser.add_argument('--log_interval', type=int, default=10)
-    parser.add_argument('--save_epoch_interval', type=int, default=10)
-    parser.add_argument('--early_stop', action='store_true')
-    parser.add_argument('--early_stop_patience', type=int, default=5)
-    parser.add_argument('--cls_type', type=str, default='linear')
-    parser.add_argument('--num_folds', type=int, default=5)
+    parser.add_argument('--log_interval', type=int, default=10, 
+                        help='매 몇번째 iteration마다 log를 출력할지 설정하세요.')
+    parser.add_argument('--save_epoch_interval', type=int, default=10, 
+                        help='매 몇번째 epoch마다 모델을 저장할지 설정하세요.')
+    parser.add_argument('--early_stop', action='store_true', 
+                        help='Early stopping을 사용합니다.')
+    parser.add_argument('--early_stop_patience', type=int, default=5, 
+                        help='Early stopping patience.')
+    parser.add_argument('--cls_type', type=str, default='linear', 
+                        help='backbone 뒤에 붙는 classifier layer의 아키텍쳐를 설정합니다. utils/models.py의 load_classifier 함수 참조.')
+    parser.add_argument('--num_folds', type=int, default=5, 
+                        help='K-Fold Cross Validation의 K값을 설정하세요.')
     args = parser.parse_args()
     main(args)
