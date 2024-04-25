@@ -14,6 +14,7 @@ class Logger:
             self.best_f1 = 0.0
             self.stop_counter = 0
             self.patience = args.early_stop_patience
+            self.best_checkpoint = None
         
         # Create root log directory
         if not os.path.exists(log_dir):
@@ -44,10 +45,15 @@ class Logger:
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
     
-    def check_early_stop(self, f1):
+    def check_early_stop(self, f1, model, optimizer, epoch):
         if f1 > self.best_f1:
             self.best_f1 = f1
             self.stop_counter = 0
+            self.best_checkpoint = {
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()
+            }
         else:
             self.stop_counter += 1
             if self.stop_counter >= self.patience:
@@ -58,6 +64,7 @@ class Logger:
         self.stop = False
         self.best_f1 = 0.0
         self.stop_counter = 0
+        self.best_checkpoint = None
                 
     def save_checkpoint(self, model, optimizer, epoch, save_name='latest'):
         torch.save({
@@ -65,6 +72,10 @@ class Logger:
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict()
         }, os.path.join(self.save_dir, f'{save_name}.pth'))
+    
+    def save_best_checkpoint(self, save_name='best'):
+        assert self.best_checkpoint is not None, 'No best checkpoint to save.'
+        torch.save(self.best_checkpoint, os.path.join(self.save_dir, f'{save_name}.pth'))
 
 def load_checkpoint(save_path):
     checkpoint = torch.load(save_path)

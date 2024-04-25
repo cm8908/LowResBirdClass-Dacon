@@ -116,9 +116,11 @@ def train_hr(args, logger, backbone_model, optimizer, criterion, device, train_f
         print(log_str)
 
         if args.early_stop:
-            logger.check_early_stop(val_f1score_lr)
+            logger.check_early_stop(val_f1score_lr, backbone_model, optimizer, e)
             if logger.stop:
+                logger.save_best_checkpoint(f'best_fold{fold_idx}')
                 break
+    return val_f1score_hr, val_f1score_lr
 
 def train_lr(args, logger, backbone_model, optimizer, criterion, device, train_fold_df, val_fold_df, fold_idx):
 
@@ -208,9 +210,11 @@ def train_lr(args, logger, backbone_model, optimizer, criterion, device, train_f
         print(log_str)
 
         if args.early_stop:
-            logger.check_early_stop(val_f1score_lr)
+            logger.check_early_stop(val_f1score_lr, backbone_model, optimizer, e)
             if logger.stop:
+                logger.save_best_checkpoint(f'best_ft_fold{fold_idx}')
                 break
+    return val_f1score_lr
 
 def main(args):
     # Set up experiment log
@@ -223,6 +227,10 @@ def main(args):
     # Load the training dataset and dataloader
     skf = StratifiedKFold(n_splits=args.num_folds, shuffle=True, random_state=42)
     train_df = pd.read_csv(os.path.join('data', 'train.csv'))
+    # Record average validation F1-scores
+    fold_f1_hr_avg = 0
+    fold_f1_hr_lr_avg = 0
+    fold_f1_lr_avg = 0
     for fold_idx, (train_idx, val_idx) in enumerate(skf.split(train_df, train_df['label'])):
         train_fold_df = train_df.loc[train_idx,:]
         val_fold_df = train_df.loc[val_idx,:]
@@ -252,11 +260,14 @@ def main(args):
         criterion = nn.CrossEntropyLoss().to(device)
         
         # Begin training loop
-        train_hr(args, logger, backbone_model, optimizer, criterion, device, train_fold_df, val_fold_df, fold_idx)
+        val_f1_hr, val_f1_lr = train_hr(args, logger, backbone_model, optimizer, criterion, device, train_fold_df, val_fold_df, fold_idx)
         logger.reset_early_stop()
         log_str = f'<Fold {fold_idx} HR training ends>'
         logger.logfile.write(log_str)
         print(log_str)
+        fold_f1_hr_avg += val_f1_hr
+        fold_f1_hr_lr_avg += val_f1_lr
+        
 
         # Phase 2: LR Training
         log_str = f'<Fold {fold_idx} LR training starts>'
@@ -289,11 +300,22 @@ def main(args):
         criterion = nn.CrossEntropyLoss().to(device)
         
         train_lr(args, logger, backbone_model, optimizer, criterion, device, train_fold_df, val_fold_df, fold_idx)
-        log_str = f'<Fold {fold_idx} HR training ends>'
+        logger.reset_early_stop()
+        log_str = f'<Fold {fold_idx} LR training ends>'
         logger.logfile.write(log_str)
         print(log_str)
+        fold_f1_lr_avg += val_f1_lr
         
-
+    # Average validation F1-scores
+    fold_f1_hr_avg /= args.num_folds
+    fold_f1_hr_lr_avg /= args.num_folds
+    fold_f1_lr_avg /= args.num_folds
+    log_str = f'Avg. over folds: validation F1-score (phase1-HR): {fold_f1_hr_avg:.4f}\n\
+        Avg. over folds: validation F1-score (phase1-LR): {fold_f1_hr_lr_avg:.4f}\n\
+            Avg. over folds: validation F1-score (phase2-LR): {fold_f1_lr_avg:.4f}\n'
+    logger.logfile.write(log_str)
+    print(log_str)
+    
     # End of training
     logger.writer.flush()
     logger.writer.close()
@@ -318,7 +340,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_interval', type=int, default=10)
     parser.add_argument('--save_epoch_interval', type=int, default=10)
     parser.add_argument('--early_stop', action='store_true')
-    parser.add_argument('--early_stop_patience', type=int, default=3)
+    parser.add_argument('--early_stop_patience', type=int, default=5)
     parser.add_argument('--cls_type', type=str, default='linear')
     parser.add_argument('--num_folds', type=int, default=5)
     args = parser.parse_args()

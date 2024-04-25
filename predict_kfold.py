@@ -47,7 +47,7 @@ def main(args):
         backbone_model = DataParallel(backbone_model)
     backbone_model = backbone_model.to(device)
     
-    fold_ckpt_paths = sorted(glob(os.path.join(args.ckpt_dir, 'latest_ft_fold*.pth')))
+    fold_ckpt_paths = sorted(glob(os.path.join(args.ckpt_dir, 'best_fold*.pth')))
     fold_preds = []
     for fold_ckpt_path in fold_ckpt_paths:
         print(f'Prediction using {fold_ckpt_path}')
