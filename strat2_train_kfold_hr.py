@@ -124,7 +124,7 @@ def main(args):
 
     # Load the training dataset and dataloader
     skf = StratifiedKFold(n_splits=args.num_folds, shuffle=True, random_state=42)
-    train_df = pd.read_csv(os.path.join('data', 'train_with_upscaled.csv'))
+    train_df = pd.read_csv(os.path.join('data', args.train_csv_filename))
     # Record average validation F1-scores
     fold_f1_hr_avg = 0
     for fold_idx, (train_idx, val_idx) in enumerate(skf.split(train_df, train_df['label'])):
@@ -196,5 +196,7 @@ if __name__ == '__main__':
     parser.add_argument('--early_stop_patience', type=int, default=5)
     parser.add_argument('--cls_type', type=str, default='linear')
     parser.add_argument('--num_folds', type=int, default=5)
+
+    parser.add_argument('--train_csv_filename', type=str, default='train_with_upscaled_with_augmented.csv')
     args = parser.parse_args()
     main(args)

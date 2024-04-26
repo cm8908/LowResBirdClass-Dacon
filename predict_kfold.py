@@ -31,7 +31,7 @@ def main(args):
     ])
 
     # Load the training dataset and dataloader
-    test_dataset = BirdDataset('test', transforms=transform, test_upscaled=False)
+    test_dataset = BirdDataset('test', transforms=transform, test_upscaled=args.test_upscaled)
     dataloader = DataLoader(test_dataset, batch_size=args.bsz, shuffle=False)
 
     # Load the backbone model & classifier
@@ -95,6 +95,8 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_dir', type=str, required=True)
     parser.add_argument('--submission_name', type=str, required=True)
     parser.add_argument('--cls_type', type=str, default='linear')
+    
+    parser.add_argument('--test_upscaled', action='store_true', help='If set to true, test dataset will be loaded with (super-resolution) upscaled images')
 
     args = parser.parse_args()
     main(args)
